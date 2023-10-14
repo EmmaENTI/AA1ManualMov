@@ -28,23 +28,20 @@ namespace RobotController
             return s;
         }
 
-        #region Fields
+        #region FieldsEX1
         // First, we need arrays to store initial and final joint angles
-        private float[] initialAngles;
+        private float[] jointStartingAngles;
         // We need an array to store rotation axes for joints, that instead of being a float will need to be MyVec
         private MyVec[] axisRotation;
         // Variables for controlling iterations, that will simply add as flags
         private bool iteration2ControlFlag;
         private bool iteration3ControlFlag;
-        #endregion
-
-        #region Constructor
-        public MyRobotController()
+        private void InitializeFieldsEX1()
         {
-            // Initialize initialAngles
-            initialAngles = new float[5] { 74, -10, 80, 40, 0 };
+            // Initialize joint starting angles
+            jointStartingAngles = new float[5] { 74, -10, 80, 40, 0 };
 
-            // Initialize axisRotation
+            // Initialize axis rotation
             axisRotation = new MyVec[5];
             axisRotation[0] = new MyVec { x = 0, y = 1, z = 0 };
             axisRotation[1] = new MyVec { x = 1, y = 0, z = 0 };
@@ -54,6 +51,31 @@ namespace RobotController
             // Initialize control flags
             iteration2ControlFlag = true;
             iteration3ControlFlag = true;
+        }
+        #endregion
+        #region FieldsEX2
+        // Track the progress of an animation
+        private float animationProgress;
+        // Store the target joint angles for the animation in array.
+        private float[] targetJointAngles;
+        private void InitializeFieldsEX2()
+        {
+            // Initialize the animation progress to 0 (beginning of animation).
+            animationProgress = 0;
+            // Initialize the target joint angles with specific values.
+            targetJointAngles = new float[5] { 40, -10, 90, 20, 90 };
+        }
+        #endregion
+
+
+        #region ConstructorOfMyRobotController
+        public MyRobotController()
+        {
+            //1
+            InitializeFieldsEX1();
+            //2
+            InitializeFieldsEX2();
+            //3
         }
         #endregion
 
@@ -67,10 +89,10 @@ namespace RobotController
             rot0 = NullQ;
 
             // Calculate the rotations for each joint using the initial angles and rotation axes
-            rot0 = Rotate(rot0, axisRotation[0], (float)Radians(initialAngles[0]));
-            rot1 = Rotate(rot0, axisRotation[1], (float)Radians(initialAngles[1]));
-            rot2 = Rotate(rot1, axisRotation[2], (float)Radians(initialAngles[2]));
-            rot3 = Rotate(rot2, axisRotation[3], (float)Radians(initialAngles[3]));
+            rot0 = Rotate(rot0, axisRotation[0], (float)Radians(jointStartingAngles[0]));
+            rot1 = Rotate(rot0, axisRotation[1], (float)Radians(jointStartingAngles[1]));
+            rot2 = Rotate(rot1, axisRotation[2], (float)Radians(jointStartingAngles[2]));
+            rot3 = Rotate(rot2, axisRotation[3], (float)Radians(jointStartingAngles[3]));
 
             // Reset control flags for iterations 2 and 3
             iteration2ControlFlag = true;
@@ -84,31 +106,45 @@ namespace RobotController
         #region EX2
         public bool PickStudAnim(out MyQuat rot0, out MyQuat rot1, out MyQuat rot2, out MyQuat rot3)
         {
+            // Reset control flags on the first iteration.
+            iteration3ControlFlag = true;
 
-            bool myCondition = false;
-            //todo: add a check for your condition
-
-
-
-            if (myCondition)
+            if (iteration2ControlFlag)
             {
-                //todo: add your code here
+                // Initialize animation progress.
+                animationProgress = 0;
+                iteration2ControlFlag = false;
+            }
+
+            if (animationProgress <= 1)
+            {
+                // Calculate the interpolated joint angles.
+                float lerpProgress = Lerp(jointStartingAngles[0], targetJointAngles[0], animationProgress);
+                rot0 = NullQ;
+                rot0 = Rotate(rot0, axisRotation[0], (float)Radians(lerpProgress));
+
+                lerpProgress = Lerp(jointStartingAngles[1], targetJointAngles[1], animationProgress);
+                rot1 = Rotate(rot0, axisRotation[1], (float)Radians(lerpProgress));
+
+                lerpProgress = Lerp(jointStartingAngles[2], targetJointAngles[2], animationProgress);
+                rot2 = Rotate(rot1, axisRotation[2], (float)Radians(lerpProgress));
+
+                lerpProgress = Lerp(jointStartingAngles[3], targetJointAngles[3], animationProgress);
+                rot3 = Rotate(rot2, axisRotation[3], (float)Radians(lerpProgress));
+
+                // Increment the animation progress.
+                animationProgress += 0.0030f;
+                return true;
+            }
+            else
+            {
+                // Reset rotation quaternions once the animation is complete.
                 rot0 = NullQ;
                 rot1 = NullQ;
                 rot2 = NullQ;
                 rot3 = NullQ;
-
-
-                return true;
+                return false;
             }
-
-            //todo: remove this once your code works.
-            rot0 = NullQ;
-            rot1 = NullQ;
-            rot2 = NullQ;
-            rot3 = NullQ;
-
-            return false;
         }
         #endregion
 
@@ -196,9 +232,6 @@ namespace RobotController
 
         internal MyQuat Rotate(MyQuat currentRotation, MyVec axis, float angle)
         {
-            //SHOULD BE CHANGED BECAUSE IT IS NOT NORMALIZED IN ANY MOMENT(?????????)
-
-
             //todo: change this so it takes currentRotation, and calculate a new quaternion rotated by an angle "angle" radians along the normalized axis "axis"
 
             //1  Calculate the half-angle and sine of the half-angle
@@ -215,12 +248,22 @@ namespace RobotController
             //3  Multiply the current rotation by the new rotation quaternion
             return Multiply(currentRotation, rotation);
         }
+
+
+
+
         //todo: add here all the functions needed
 
-        internal double Radians(double angleRadians)
+        internal double Radians(double angleDegrees)
         {
-            return (angleRadians * (Math.PI / 180));
+            return angleDegrees * (Math.PI / 180);
         }
+        internal float Lerp(float a, float b, float t)
+        {
+            return a + t * (b - a);
+            // Returns a value that smoothly transitions from a to b based on the weight t.
+        }
+
         #endregion
     }
 }
