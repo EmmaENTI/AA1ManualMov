@@ -158,42 +158,38 @@ namespace RobotController
         public bool PickStudAnimVertical(out MyQuat rot0, out MyQuat rot1, out MyQuat rot2, out MyQuat rot3)
         {
 
-            // Set control flags for the vertical animation.
             iteration2ControlFlag = true;
 
-            // Check if it's the first iteration of the animation.
             if (iteration3ControlFlag)
             {
-                // Initialize the animation progress.
                 animationProgress = 0;
                 iteration3ControlFlag = false;
             }
 
             if (animationProgress <= 1)
             {
-                // Initialize rotation quaternions for joints.
+                //todo: add your code here
                 rot0 = NullQ;
+                rot0 = Rotate(rot0, axisRotation[0], (float)Radians(Lerp(jointStartingAngles[0], targetJointAngles[0], animationProgress)));
+                rot1 = Rotate(rot0, axisRotation[1], (float)Radians(Lerp(jointStartingAngles[1], targetJointAngles[1], animationProgress)));
+                rot2 = Rotate(rot1, axisRotation[2], (float)Radians(Lerp(jointStartingAngles[2], targetJointAngles[2], animationProgress)));
 
-                // Interpolate and rotate the joints.
-                rot0 = RotateJoint(rot0, 0, animationProgress);
-                rot1 = RotateJoint(rot0, 1, animationProgress);
-                rot2 = RotateJoint(rot1, 2, animationProgress);
+                swing = Rotate(rot2, axisRotation[3], (float)Radians(Lerp(jointStartingAngles[3], targetJointAngles[3], animationProgress)));
+                twist = Rotate(swing, axisRotation[4], (float)Radians(Lerp(jointStartingAngles[4], targetJointAngles[4], animationProgress)));
 
-                // Calculate the swing and twist rotations.
-                MyQuat swing = RotateJoint(rot2, 3, animationProgress);
-                MyQuat twist = RotateJoint(swing, 4, animationProgress);
-
-                // Combine the swing and twist rotations to get rot3.
                 rot3 = Multiply(twist, swing);
 
-                // Increment the animation progress.
                 animationProgress += 0.0030f;
                 return true;
             }
             else
             {
-                // Return false if the condition is not met or if the animation is complete.
-                ResetRotationQuaternions(out rot0, out rot1, out rot2, out rot3);
+                //todo: remove this once your code works.
+                rot0 = NullQ;
+                rot1 = NullQ;
+                rot2 = NullQ;
+                rot3 = NullQ;
+
                 return false;
             }
 
@@ -302,22 +298,6 @@ namespace RobotController
                 w = _quat.w * num
             };
         }
-
-        private MyQuat RotateJoint(MyQuat currentRotation, int jointIndex, float progress)
-        {
-            return Rotate(currentRotation, axisRotation[jointIndex], (float)Radians(Lerp(jointStartingAngles[jointIndex], targetJointAngles[jointIndex], progress)));
-        }
-
-        private void ResetRotationQuaternions(out MyQuat rot0, out MyQuat rot1, out MyQuat rot2, out MyQuat rot3)
-        {
-            rot0 = NullQ;
-            rot1 = NullQ;
-            rot2 = NullQ;
-            rot3 = NullQ;
-        }
-
-
-
         #endregion
     }
 }
