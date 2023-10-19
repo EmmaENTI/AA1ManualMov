@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 
 namespace RobotController
@@ -67,6 +68,8 @@ namespace RobotController
         }
         #endregion
 
+        //Fields EX3
+        private static MyQuat twist, swing;
 
         #region ConstructorOfMyRobotController
         public MyRobotController()
@@ -155,41 +158,53 @@ namespace RobotController
         public bool PickStudAnimVertical(out MyQuat rot0, out MyQuat rot1, out MyQuat rot2, out MyQuat rot3)
         {
 
-            bool myCondition = false;
-            //todo: add a check for your condition
+            iteration2ControlFlag = true;
 
-
-
-            while (myCondition)
+            if (iteration3ControlFlag)
             {
-                //todo: add your code here
-
-
+                animationProgress = 0;
+                iteration3ControlFlag = false;
             }
 
-            //todo: remove this once your code works.
-            rot0 = NullQ;
-            rot1 = NullQ;
-            rot2 = NullQ;
-            rot3 = NullQ;
+            if (animationProgress <= 1)
+            {
+                //todo: add your code here
+                rot0 = NullQ;
+                rot0 = Rotate(rot0, axisRotation[0], (float)Radians(Lerp(jointStartingAngles[0], targetJointAngles[0], animationProgress)));
+                rot1 = Rotate(rot0, axisRotation[1], (float)Radians(Lerp(jointStartingAngles[1], targetJointAngles[1], animationProgress)));
+                rot2 = Rotate(rot1, axisRotation[2], (float)Radians(Lerp(jointStartingAngles[2], targetJointAngles[2], animationProgress)));
 
-            return false;
+                swing = Rotate(rot2, axisRotation[3], (float)Radians(Lerp(jointStartingAngles[3], targetJointAngles[3], animationProgress)));
+                twist = Rotate(swing, axisRotation[4], (float)Radians(Lerp(jointStartingAngles[4], targetJointAngles[4], animationProgress)));
+
+                rot3 = Multiply(twist, swing);
+
+                animationProgress += 0.0030f;
+                return true;
+            }
+            else
+            {
+                //todo: remove this once your code works.
+                rot0 = NullQ;
+                rot1 = NullQ;
+                rot2 = NullQ;
+                rot3 = NullQ;
+
+                return false;
+            }
+
         }
 
 
         public static MyQuat GetSwing(MyQuat rot3)
         {
-            //todo: change the return value for exercise 3
-            return NullQ;
-
+            return Normalize(Multiply(Inverse(twist), rot3));
         }
 
 
         public static MyQuat GetTwist(MyQuat rot3)
         {
-            //todo: change the return value for exercise 3
-            return NullQ;
-
+            return Normalize(Multiply(rot3, Inverse(swing)));
         }
         #endregion
 
@@ -213,10 +228,8 @@ namespace RobotController
             }
         }
 
-        internal MyQuat Multiply(MyQuat q1, MyQuat q2) {
-
-            //todo: change this so it returns a multiplication:
-
+        internal static MyQuat Multiply(MyQuat q1, MyQuat q2) 
+        {
             //1  First, we create a new quaternion to store our result later
             MyQuat result = NullQ;
             //2  Calculate the scalar w component
@@ -250,10 +263,6 @@ namespace RobotController
         }
 
 
-
-
-        //todo: add here all the functions needed
-
         internal double Radians(double angleDegrees)
         {
             return angleDegrees * (Math.PI / 180);
@@ -264,6 +273,31 @@ namespace RobotController
             // Returns a value that smoothly transitions from a to b based on the weight t.
         }
 
+        internal static MyQuat Normalize(MyQuat _quat)
+        {
+            float magnitude = (float)Math.Sqrt(_quat.x * _quat.x + _quat.y * _quat.y + _quat.z * _quat.z + _quat.w * _quat.w);
+
+            return new MyQuat
+            {
+                x = _quat.x / magnitude,
+                y = _quat.y / magnitude,
+                z = _quat.z / magnitude,
+                w = _quat.w / magnitude
+            };
+        }
+
+        internal static MyQuat Inverse(MyQuat _quat)
+        {
+            float num = 1.0f / (_quat.x * _quat.x + _quat.y * _quat.y + _quat.z * _quat.z + _quat.w * _quat.w);
+
+            return new MyQuat
+            {
+                x = -_quat.x * num,
+                y = -_quat.y * num,
+                z = -_quat.z * num,
+                w = _quat.w * num
+            };
+        }
         #endregion
     }
 }
